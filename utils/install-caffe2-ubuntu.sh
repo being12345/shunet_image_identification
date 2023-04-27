@@ -53,7 +53,7 @@ sudo make
 cd build
 sudo make install
 
-# Test
+# Comm_Test
 export PYTHONPATH=/usr/local:$PYTHONPATH
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 

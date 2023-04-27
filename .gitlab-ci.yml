@@ -18,7 +18,7 @@ cache:
 
 stages:
   - build
-  - test
+  - test_image
   - deploy
 
 before_script:
@@ -37,23 +37,23 @@ build-wheel:
     - dist/
 
 unit-test:
-  stage: test
+  stage: test_image
   dependencies:
   - build-wheel
   script:
   - pip3 install dist/*.whl tensorflow
   - apt update && apt install -y libsm6 libxrender-dev
-  - python3 setup.py test
+  - python3 setup.py test_image
   allow_failure: true
 
 pep8-codestyle:
-  stage: test
+  stage: test_image
   script:
   - pycodestyle .
   allow_failure: true
 
 pylint-codestyle:
-  stage: test
+  stage: test_image
   script:
   - pylint berrynet
   allow_failure: true

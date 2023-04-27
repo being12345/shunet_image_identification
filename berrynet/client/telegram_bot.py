@@ -152,7 +152,7 @@ class TelegramBotService(object):
         update.message.reply_text((
             'I support these commands:\n\n'
             'help - Display help message.\n'
-            'hi - Test Telegram client.\n'
+            'hi - Comm_Test Telegram client.\n'
             'camera - Start camera.\n'
             'stop - Stop camera.\n'
             'shot - Take a shot from camera.'))

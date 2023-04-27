@@ -170,7 +170,7 @@ def parse_args():
 
 
 def main():
-    # Test TFLite engines
+    # Comm_Test TFLite engines
     args = parse_args()
     if args['debug']:
         logger.setLevel(logging.DEBUG)

@@ -119,7 +119,7 @@ def parse_args():
 
 
 def main():
-    # Test TFLiteYoloV4 engines
+    # Comm_Test TFLiteYoloV4 engines
     args = parse_args()
     if args['debug']:
         logger.setLevel(logging.DEBUG)

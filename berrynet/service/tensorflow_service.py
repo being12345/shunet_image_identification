@@ -63,7 +63,7 @@ def parse_args():
 
 
 def main():
-    # Test TensorFlow engine
+    # Comm_Test TensorFlow engine
     args = parse_args()
     if args['debug']:
         logger.setLevel(logging.DEBUG)
@@ -93,7 +93,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # Test Movidius engine
+    # Comm_Test Movidius engine
     #import movidius as mv
 
     #logging.basicConfig(level=logging.DEBUG)

@@ -131,7 +131,7 @@ if __name__ == '__main__':
     logging("watch_dir: ", WATCH_DIR)
     logging("pid: ", pidfile)
 
-    cmd = ['./darknet', 'detector', 'test', data, cfg, weight, '-out', '/usr/local/berrynet/dashboard/www/freeboard/snapshot']
+    cmd = ['./darknet', 'detector', 'test_image', data, cfg, weight, '-out', '/usr/local/berrynet/dashboard/www/freeboard/snapshot']
     darknet = subprocess.Popen(cmd, bufsize=0,
             stdin=subprocess.PIPE,
             stderr=subprocess.STDOUT)
