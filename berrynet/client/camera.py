@@ -1,5 +1,5 @@
 # TODO: reconstruct args convert to json
-
+# TODO: use emqx broker slow
 import argparse
 import json
 import logging
@@ -204,6 +204,8 @@ def duration(t):
 
 def main():
     args = parse_args()
+
+    print(args)
 
     if args['debug']:
         logger.setLevel(logging.DEBUG)
