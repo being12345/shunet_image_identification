@@ -1,21 +1,4 @@
-#!/usr/bin/python3
-#
-# Copyright 2018 DT42
-#
-# This file is part of BerryNet.
-#
-# BerryNet is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# BerryNet is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with BerryNet.  If not, see <http://www.gnu.org/licenses/>.
+# TODO: reconstruct args convert to json
 
 import argparse
 import json
@@ -27,10 +10,7 @@ from datetime import datetime
 import cv2
 
 from berrynet import logger
-
-
-# from berrynet.comm import Communicator
-# from berrynet.comm import payload
+from berrynet.comm import Communicator, payload
 
 
 def parse_args():
@@ -95,35 +75,6 @@ def parse_args():
     return vars(ap.parse_args())
 
 
-def main():
-    args = parse_args()
-    if args['debug']:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
-
-    # TODO: right?
-    # comm_config = {
-    #     'subscribe': {},
-    #     'broker': {
-    #         'address': args['broker_ip'],
-    #         'port': args['broker_port']
-    #     }
-    # }
-    #
-    # comm = Communicator(comm_config, debug=True)
-
-    metadata = json.loads(args.get('meta', '{}'))
-
-    if args['mode'] == 'stream':
-        capture_file_image(args)
-    elif args['mode'] == 'file':
-        [retval, jpg_bytes] = capture_file_image(args)
-        comm_file_image(jpg_bytes)
-    else:
-        logger.error('User assigned unknown mode {}'.format(args['mode']))
-
-
 def check_camera_type(args):
     # Check input stream source
     if args['stream_src'].isdigit():
@@ -136,21 +87,7 @@ def check_camera_type(args):
     return stream_source
 
 
-def set_interval(cam_fps, args):
-    if cam_fps > 30 or cam_fps < 1:
-        # logger.warn('Camera FPS is {} (>30 or <1). Set it to 30.'.format(cam_fps))
-        cam_fps = 30
-    out_fps = args['fps']
-    interval = int(cam_fps / out_fps)   # TODO: quick or slow depend this
-
-    return interval
-
-
-
-def capture_stream_image(args):
-    counter = 0
-    fail_counter = 0
-
+def capture_stream_image(comm, metadata, args):
     # Check input stream source
     stream_source = check_camera_type(args)
 
@@ -158,76 +95,140 @@ def capture_stream_image(args):
 
     cam_fps = capture.get(cv2.CAP_PROP_FPS)
 
-    interval = set_interval(cam_fps, args)
+    out_fps = args['fps']
 
-    # TODO: used for log
-    # logger.debug('===== VideoCapture Information =====')
-    # if type(stream_source) == "int":
-    #     stream_source_uri = '/dev/video{}'.format(stream_source)
-    # else:
-    #     stream_source_uri = stream_source
-    # logger.debug('Stream Source: {}'.format(stream_source_uri))
-    # logger.debug('Camera FPS: {}'.format(cam_fps))
-    # logger.debug('Output FPS: {}'.format(out_fps))
-    # logger.debug('Interval: {}'.format(interval))
-    # logger.debug('Send MQTT Topic: {}'.format(args['topic']))
-    # logger.debug('Warmup Counter: {}'.format(warmup_counter))
-    # logger.debug('====================================')
+    interval = set_interval(cam_fps, out_fps)
+
+    log_stream_image(stream_source, cam_fps, out_fps, args, args['topic'])
+
+    counter = 0
+    fail_counter = 0
 
     while True:
         status, im = capture.read()
         if (status is True):
-            counter += 1
-            if counter == interval:
-                logger.debug('Drop frames: {}'.format(counter - 1))
-                counter = 0
+            counter = get_image_success(counter, interval, im, args)
+            # comm_stream_image(im, metadata, args, comm)
 
-                # Open a window and display the ready-to-send frame.
-                # This is useful for development and debugging.
-                if args['display']:
-                    cv2.imshow('Frame', im)
-                    cv2.waitKey(1)
-
-                t = datetime.now()
-                retval, jpg_bytes = cv2.imencode('.jpg', im)
-                print(jpg_bytes)
-                # mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
-                # comm.send(args['topic'], mqtt_payload)
-                logger.debug('send: {} ms'.format(duration(t)))
-            else:
-                pass
         else:
-            fail_counter += 1
-            logger.critical('ERROR: Failure #{} happened when reading frame'.format(fail_counter))
-
-            # Re-create capture.
-            capture.release()
-            logger.critical('Re-create a capture and reconnect to {} after 5s'.format(stream_source))
-            time.sleep(5)
+            fail_counter = get_image_fail(fail_counter, capture, stream_source)
             capture = cv2.VideoCapture(stream_source)
+
+
+def set_interval(cam_fps, out_fps):
+    if cam_fps > 30 or cam_fps < 1:
+        # logger.warn('Camera FPS is {} (>30 or <1). Set it to 30.'.format(cam_fps))
+        cam_fps = 30
+    interval = int(cam_fps / out_fps)
+
+    return interval
+
+
+def log_stream_image(stream_source, cam_fps, out_fps, interval, topic):
+    logger.debug('===== VideoCapture Information =====')
+    if type(stream_source) == "int":
+        stream_source_uri = '/dev/video{}'.format(stream_source)
+    else:
+        stream_source_uri = stream_source
+    logger.debug('Stream Source: {}'.format(stream_source_uri))
+    logger.debug('Camera FPS: {}'.format(cam_fps))
+    logger.debug('Output FPS: {}'.format(out_fps))
+    logger.debug('Interval: {}'.format(interval))
+    logger.debug('Send MQTT Topic: {}'.format(topic))
+    logger.debug('====================================')
+
+
+def get_image_success(counter, interval, im, args):
+    counter += 1
+    if counter == interval:
+        logger.debug('Drop frames: {}'.format(counter - 1))
+        counter = 0
+
+        if args['display']:
+            display_image(im, args)
+
+        t = datetime.now()
+        logger.debug('send: {} ms'.format(duration(t)))
+
+    else:
+        pass
+
+    return counter
+
+
+def display_image(im, args):
+    cv2.imshow('Frame', im)
+    cv2.waitKey(1)
+
+
+def get_image_fail(fail_counter, capture, stream_source):
+    fail_counter += 1
+    logger.critical('ERROR: Failure #{} happened when reading frame'.format(fail_counter))
+
+    # Re-create capture.
+    capture.release()
+    logger.critical('Re-create a capture and reconnect to {} after 5s'.format(stream_source))
+    time.sleep(5)
+
+    return fail_counter
 
 
 def capture_file_image(args):
     im = cv2.imread(args['filepath'])
     retval, jpg_bytes = cv2.imencode('.jpg', im)
-    return [retval, jpg_bytes]
+    return jpg_bytes
 
 
-def comm_file_image(jpg_bytes):
-    return
-    # mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
-    # logger.debug('payload: {} ms'.format(duration(t)))
-    # logger.debug('payload size: {}'.format(len(mqtt_payload)))
-    #
-    # # Client publishes payload
-    # t = datetime.now()
-    # comm.send(args['topic'], mqtt_payload)
-    # logger.debug('mqtt.publish: {} ms'.format(duration(t)))
-    # logger.debug('publish at {}'.format(datetime.now().isoformat()))
+def comm_stream_image(im, metadata, args, comm):
+    retval, jpg_bytes = cv2.imencode('.jpg', im)
+    mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
+    comm.send(args['topic'], mqtt_payload)
+
+
+def comm_file_image(jpg_bytes, args, metadata, comm):
+    mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
+
+    logger.debug('payload: {} ms'.format(duration(datetime.now())))
+    logger.debug('payload size: {}'.format(len(mqtt_payload)))
+
+    # Client publishes payload
+    comm.send(args['topic'], mqtt_payload)
+
+    logger.debug('mqtt.publish: {} ms'.format(duration(datetime.now())))
+    logger.debug('publish at {}'.format(datetime.now().isoformat()))
 
 
 def duration(t):
     return (datetime.now() - t).microseconds / 1000
+
+
+def main():
+    args = parse_args()
+
+    if args['debug']:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    comm_config = {
+        'subscribe': {},
+        'broker': {
+            'address': args['broker_ip'],
+            'port': args['broker_port']
+        }
+    }
+
+    comm = Communicator(comm_config, debug=True)
+
+    metadata = json.loads(args.get('meta', '{}'))
+
+    if args['mode'] == 'stream':
+        capture_stream_image(comm, metadata, args)
+    elif args['mode'] == 'file':
+        jpg_bytes = capture_file_image(args)
+        # comm_file_image(jpg_bytes, args, metadata, comm)
+    else:
+        logger.error('User assigned unknown mode {}'.format(args['mode']))
 
 
 if __name__ == '__main__':
