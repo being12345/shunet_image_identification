@@ -51,8 +51,8 @@ def parse_args():
     ap.add_argument(
         '--fps',
         type=float,
-        default=5,
-        help='Frame per second in streaming mode. (default: 5)'
+        default=1,
+        help='Frame per second in streaming mode. (default: 1)'
     )
     ap.add_argument(
         '--filepath',
@@ -176,10 +176,11 @@ def capture_stream_image(args):
 
     while True:
         status, im = capture.read()
-        if status is True:
+        if (status is True):
             counter += 1
             if counter == interval:
                 logger.debug('Drop frames: {}'.format(counter - 1))
+                counter = 0
 
                 # Open a window and display the ready-to-send frame.
                 # This is useful for development and debugging.
@@ -189,6 +190,7 @@ def capture_stream_image(args):
 
                 t = datetime.now()
                 retval, jpg_bytes = cv2.imencode('.jpg', im)
+                print(jpg_bytes)
                 # mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
                 # comm.send(args['topic'], mqtt_payload)
                 logger.debug('send: {} ms'.format(duration(t)))
