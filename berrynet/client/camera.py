@@ -108,7 +108,7 @@ def capture_stream_image(comm, metadata, args):
         status, im = capture.read()
         if (status is True):
             counter = get_image_success(counter, interval, im, args)
-            # comm_stream_image(im, metadata, args, comm)
+            comm_stream_image(im, metadata, args, comm)
 
         else:
             fail_counter = get_image_fail(fail_counter, capture, stream_source)
