@@ -51,8 +51,8 @@ def parse_args():
     ap.add_argument(
         '--fps',
         type=float,
-        default=1,
-        help='Frame per second in streaming mode. (default: 1)'
+        default=5,
+        help='Frame per second in streaming mode. (default: 5)'
     )
     ap.add_argument(
         '--filepath',
@@ -136,6 +136,17 @@ def check_camera_type(args):
     return stream_source
 
 
+def set_interval(cam_fps, args):
+    if cam_fps > 30 or cam_fps < 1:
+        # logger.warn('Camera FPS is {} (>30 or <1). Set it to 30.'.format(cam_fps))
+        cam_fps = 30
+    out_fps = args['fps']
+    interval = int(cam_fps / out_fps)   # TODO: quick or slow depend this
+
+    return interval
+
+
+
 def capture_stream_image(args):
     counter = 0
     fail_counter = 0
@@ -144,18 +155,17 @@ def capture_stream_image(args):
     stream_source = check_camera_type(args)
 
     capture = cv2.VideoCapture(stream_source)
-    cam_fps = capture.get(cv2.CAP_PROP_FPS)
-    if cam_fps > 30 or cam_fps < 1:
-        # logger.warn('Camera FPS is {} (>30 or <1). Set it to 30.'.format(cam_fps))
-        cam_fps = 30
-    out_fps = args['fps']
-    interval = int(cam_fps / out_fps)
 
+    cam_fps = capture.get(cv2.CAP_PROP_FPS)
+
+    interval = set_interval(cam_fps, args)
+
+    # TODO: used for log
     # logger.debug('===== VideoCapture Information =====')
-    if stream_source.isdigit():
-        stream_source_uri = '/dev/video{}'.format(stream_source)
-    else:
-        stream_source_uri = stream_source
+    # if type(stream_source) == "int":
+    #     stream_source_uri = '/dev/video{}'.format(stream_source)
+    # else:
+    #     stream_source_uri = stream_source
     # logger.debug('Stream Source: {}'.format(stream_source_uri))
     # logger.debug('Camera FPS: {}'.format(cam_fps))
     # logger.debug('Output FPS: {}'.format(out_fps))
@@ -166,25 +176,10 @@ def capture_stream_image(args):
 
     while True:
         status, im = capture.read()
-
-        # To verify whether the input source is alive, you should use the
-        # return value of capture.read(). It will not work by capturing
-        # exception of a capture instance, or by checking the return value
-        # of capture.isOpened().
-        #
-        # Two reasons:
-        # 1. If a dead stream is alive again, capture will not notify
-        #    that input source is dead.
-        #
-        # 2. If you check capture.isOpened(), it will keep retruning
-        #    True if a stream is dead afterward. So you can not use
-        #    the capture return value (capture status) to determine
-        #    whether a stream is alive or not.
-        if (status is True):
+        if status is True:
             counter += 1
             if counter == interval:
                 logger.debug('Drop frames: {}'.format(counter - 1))
-                counter = 0
 
                 # Open a window and display the ready-to-send frame.
                 # This is useful for development and debugging.
