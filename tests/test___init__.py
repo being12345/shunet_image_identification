@@ -1,7 +1,7 @@
 from unittest import TestCase
 import warnings
 
-from berrynet.comm import Communicator, on_message
+from berrynet.comm import Communicator
 
 
 # 体会: 1. 如何做到将两个耦合的东西做到解耦, 分解 api 让二者不要相互牵制

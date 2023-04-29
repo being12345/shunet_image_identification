@@ -1,6 +1,7 @@
-# (TODO: get dynamic)
-# 初始化 comm: client id, ip, 端口(在 comm_config) 中, pw, 三个回调函数
-# 1. 建立连接(回调) 2. 发送消息(回调) 3. 接收消息(回调)
+# (TODO: get ID dynamic)
+
+# reconstructed by zhuofengli
+
 import time
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
@@ -9,20 +10,28 @@ from berrynet import logger
 from logzero import setup_logger
 
 
-# 1. comm_config: broker(dic) topic subscribe(dic) 2. device_config: client_id password
 def on_message(client, userdata, msg):
     """Dispatch received message to its bound functor.
     """
     logger.debug('Receive message from topic {}'.format(msg.topic))
     # logger.debug('Message payload {}'.format(msg.payload))
-    client.comm_config['subscribe'][msg.topic](msg.payload)
+    # TODO: update on_message
+    # client.comm_config['subscribe'][msg.topic](msg.payload)
 
 
 class Communicator(object):
+    """物联网协议通信类
+    1. 初始化类: 必须提供 comm_config(通信相关配置), device_config(设备相关配置, 便于连接云平台), 具体实例见 main 函数
+    2. 连接 broker (已设置 on_connect 回调) 并订阅 topic: 运行 start_nb, client 将以非阻塞形式收发消息(多线程)
+    3. 发送消息: 运行 send
+    4. 接受消息: 已设置 on_message 回调
+    """
+
     def __init__(self, comm_config, device_config, debug=False):
         self.client = mqtt.Client(device_config["client_id"])
         self.client.username_pw_set(device_config["password"])
         self.client.comm_config = comm_config
+        self.client.on_message = on_message
 
     def run(self):
         self.client.connect(
@@ -54,17 +63,22 @@ class Communicator(object):
         logger.debug('Send message to topic')
 
         self.client.publish(self.client.comm_config["topic"], payload)
-        print(payload)
 
 
 def main():
+    """
+    MQTT 通信类整合测试, 包括连接, 收发消息
+    Returns:
+
+    """
     comm_config = {
         "broker": {
             "address": 'broker.emqx.io',
             "port": 1883
         },
         "topic": "/berrynet/image",
-        "subscribe": {"/berrynet/image": ""},
+        "subscribe": {
+            "/berrynet/image": ""},
     }
 
     device_config = {
