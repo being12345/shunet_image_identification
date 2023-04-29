@@ -4,7 +4,7 @@ import cv2
 
 from berrynet.engine.tensorflow_engine import TensorFlowEngine
 
-
+# integrate test for tf_engine
 class TestTensorFlowEngine(unittest.TestCase):
     def test_engine(self):
         model = 'berrynet/engine/inception_v3_2016_08_28_frozen.pb'
@@ -20,19 +20,6 @@ class TestTensorFlowEngine(unittest.TestCase):
             cv2.COLOR_BGR2RGB)
         tfe.process_output(tfe.inference(tfe.process_input(rgb_array)))
         tfe.process_output(tfe.inference(tfe.process_input(rgb_array)))
-        #self.assertEqual('foo'.upper(), 'FOO')
-
-    #def test_isupper(self):
-    #    self.assertTrue('FOO'.isupper())
-    #    self.assertFalse('Foo'.isupper())
-
-    #def test_split(self):
-    #    s = 'hello world'
-    #    self.assertEqual(s.split(), ['hello', 'world'])
-    #    # check that s.split fails when the separator is not a string
-    #    with self.assertRaises(TypeError):
-    #        s.split(2)
-
 
 if __name__ == '__main__':
     unittest.main()

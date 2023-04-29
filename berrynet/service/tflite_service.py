@@ -1,26 +1,10 @@
-# Copyright 2019 DT42
-#
-# This file is part of BerryNet.
-#
-# BerryNet is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# BerryNet is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with BerryNet.  If not, see <http://www.gnu.org/licenses/>.
-
 """Engine service is a bridge between incoming data and inference engine.
 """
 
 import argparse
 import logging
 import time
+from turtle import color
 
 from berrynet import logger
 from berrynet.comm import payload
@@ -28,7 +12,7 @@ from berrynet.dlmodelmgr import DLModelManager
 from berrynet.engine.tflite_engine import TFLiteClassifierEngine
 from berrynet.engine.tflite_engine import TFLiteDetectorEngine
 from berrynet.service import EngineService
-from berrynet.utils import draw_bb
+from berrynet.utils import draw_bb, draw_label
 from berrynet.utils import generate_class_color
 
 

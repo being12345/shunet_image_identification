@@ -233,6 +233,8 @@ def main():
     #           -m detect.tflite --labels labels.txt -i dog.jpg --debug
     args = parse_argsr()
 
+    print(args)
+
     if args.debug:
         logger.setLevel(logging.DEBUG)
     else:

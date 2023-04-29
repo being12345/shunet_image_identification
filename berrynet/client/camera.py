@@ -182,7 +182,7 @@ def capture_file_image(args):
 def comm_stream_image(im, metadata, args, comm):
     retval, jpg_bytes = cv2.imencode('.jpg', im)
     mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
-    comm.send(args['topic'], mqtt_payload)
+    comm.send("v1/devices/me/telemetry", mqtt_payload)
 
 
 def comm_file_image(jpg_bytes, args, metadata, comm):
@@ -201,11 +201,9 @@ def comm_file_image(jpg_bytes, args, metadata, comm):
 def duration(t):
     return (datetime.now() - t).microseconds / 1000
 
-
+# test connect to thingsboard
 def main():
     args = parse_args()
-
-    print(args)
 
     if args['debug']:
         logger.setLevel(logging.DEBUG)
