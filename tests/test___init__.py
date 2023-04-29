@@ -28,8 +28,6 @@ class TestCommunicator(TestCase):
 
     def test_start_nb(self):
         comm_config = {
-            "client": "ABC",
-            "password": "oBMEfJgd3XhaqrX8eibm",
             "broker": {
                 "address": 'broker.emqx.io',
                 "port": 1883
@@ -38,15 +36,17 @@ class TestCommunicator(TestCase):
             "subscribe": {"/berrynet/image": ""},
         }
 
-        comm = Communicator(comm_config)
-
-        comm.start_nb()
-        pay_load = {
-            "id": "12345"
+        device_config = {
+            "client_id": "ABC",
+            "password": "oBMEfJgd3XhaqrX8eibm"
         }
 
+        comm = Communicator(comm_config, device_config)
+
+        comm.start_nb()
+
         while True:
-            comm.client.publish(comm_config["topic"], 1)
+            comm.client.publish(comm_config['topic'], 1)
 
     def test_stop_nb(self):
         comm_config = {

@@ -8,7 +8,7 @@ import paho.mqtt.publish as publish
 from berrynet import logger
 from logzero import setup_logger
 
-
+# 1. comm_config: broker(dic) topic subscribe(dic) 2. device_config: client_id password
 def on_message(client, userdata, msg):
     """Dispatch received message to its bound functor.
     """
@@ -18,14 +18,10 @@ def on_message(client, userdata, msg):
 
 
 class Communicator(object):
-    def __init__(self, comm_config, debug=False):
-        # TODO: test connect thingsboard
-        self.client = mqtt.Client("ABC123")
-        # TODO: test connect
-        # self.client.username_pw_set('Sl2y3k68WQnpBOLPQ9AE')
+    def __init__(self, comm_config, device_config, debug=False):
+        self.client = mqtt.Client(device_config["client_id"])
+        self.client.username_pw_set(device_config["password"])
         self.client.comm_config = comm_config
-        # self.client.connect_callback = on_connect
-        # self.client.on_message = on_message
 
     def run(self):
         self.client.connect(
