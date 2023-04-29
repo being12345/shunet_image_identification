@@ -34,7 +34,8 @@ class TestCommunicator(TestCase):
                 "address": 'broker.emqx.io',
                 "port": 1883
             },
-            "topic": "/berrynet/image"
+            "topic": "/berrynet/image",
+            "subscribe": {"/berrynet/image": ""},
         }
 
         comm = Communicator(comm_config)

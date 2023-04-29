@@ -9,15 +9,6 @@ from berrynet import logger
 from logzero import setup_logger
 
 
-# def on_connect(client, userdata, flags, rc):
-#     print("connect")
-#     logger.debug('Connected with result code ' + str(rc))
-#
-#     for topic in client.comm_config['subscribe'].keys():
-#         logger.debug('Subscribe topic {}'.format(topic))
-#         client.subscribe(topic)
-
-
 def on_message(client, userdata, msg):
     """Dispatch received message to its bound functor.
     """
@@ -46,17 +37,14 @@ class Communicator(object):
 
     def start_nb(self):
         def on_connect(client, userdata, flags, rc):
-            if rc == 0:
-                print("Connected to MQTT Broker!")
-            else:
-                print("Failed to connect, return code %d\n", rc)
+            logger.debug('Connected with result code ' + str(rc))
+
+            for topic in client.comm_config['subscribe'].keys():
+                logger.debug('Subscribe topic {}'.format(topic))
+                client.subscribe(topic)
 
         self.client.on_connect = on_connect
 
-        print(self.client.comm_config['broker']['address'])
-        print(self.client.comm_config['broker']['port'])
-
-        self.client.on_connect = on_connect
         self.client.connect(
             self.client.comm_config['broker']['address'], self.client.comm_config['broker']['port'], 60)
 
