@@ -1,7 +1,7 @@
 # (TODO: get dynamic)
 # 初始化 comm: client id, ip, 端口(在 comm_config) 中, pw, 三个回调函数
 # 1. 建立连接(回调) 2. 发送消息(回调) 3. 接收消息(回调)
-
+import time
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
@@ -74,7 +74,9 @@ def main():
 
     comm = Communicator(comm_config, device_config)
     comm.start_nb()
-    comm.send(1)
+    while True:
+        time.sleep(2)
+        comm.send(1)
 
 
 if __name__ == '__main__':
