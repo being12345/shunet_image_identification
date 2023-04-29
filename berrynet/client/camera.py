@@ -41,7 +41,7 @@ def parse_args():
     )
     ap.add_argument(
         '--broker-ip',
-        default='localhost',
+        default='broker.emqx.io',
         help='MQTT broker IP.'
     )
     ap.add_argument(
@@ -53,6 +53,14 @@ def parse_args():
     ap.add_argument('--topic',
                     default='berrynet/data/rgbimage',
                     help='The topic to send the captured frames.'
+                    )
+    ap.add_argument('--clientId',
+                    default='ABC',
+                    help='cloud platform token'
+                    )
+    ap.add_argument('--password',
+                    default='oBMEfJgd3XhaqrX8eibm',
+                    help='camera client id'
                     )
     ap.add_argument('--display',
                     action='store_true',
@@ -182,7 +190,7 @@ def capture_file_image(args):
 def comm_stream_image(im, metadata, args, comm):
     retval, jpg_bytes = cv2.imencode('.jpg', im)
     mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
-    comm.send("v1/devices/me/telemetry", mqtt_payload)
+    comm.send(mqtt_payload)
 
 
 def comm_file_image(jpg_bytes, args, metadata, comm):
@@ -201,24 +209,33 @@ def comm_file_image(jpg_bytes, args, metadata, comm):
 def duration(t):
     return (datetime.now() - t).microseconds / 1000
 
-# test connect to thingsboard
+
 def main():
     args = parse_args()
 
-    if args['debug']:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    # TODO: comment here when debug
+    # if args['debug']:
+    #     logger.setLevel(logging.DEBUG)
+    # else:
+    #     logger.setLevel(logging.INFO)
 
     comm_config = {
-        'subscribe': {},
-        'broker': {
-            'address': args['broker_ip'],
-            'port': args['broker_port']
-        }
+        "broker": {
+            "address": args.get('broker_ip'),
+            "port": args.get('broker_port')
+        },
+        "topic": args['topic'],
+        "subscribe": {  # TODO: update this
+            "/berrynet/image": ""},
     }
 
-    comm = Communicator(comm_config, debug=True)
+    device_config = {
+        "client_id": args['clientId'],
+        "password": args['password']
+    }
+
+    comm = Communicator(comm_config, device_config)
+    comm.start_nb()
 
     metadata = json.loads(args.get('meta', '{}'))
 
@@ -226,7 +243,7 @@ def main():
         capture_stream_image(comm, metadata, args)
     elif args['mode'] == 'file':
         jpg_bytes = capture_file_image(args)
-        # comm_file_image(jpg_bytes, args, metadata, comm)
+        comm_file_image(jpg_bytes, args, metadata, comm)
     else:
         logger.error('User assigned unknown mode {}'.format(args['mode']))
 
