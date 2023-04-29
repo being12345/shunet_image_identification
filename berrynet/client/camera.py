@@ -13,7 +13,6 @@ from berrynet import logger
 from berrynet.comm import Communicator, payload
 
 
-
 def parse_args():
     """
     1. 对于 stream 模式需要设置的参数: 除了 --file 其他均需要设置(具体信息详见参数说明)
@@ -217,12 +216,15 @@ def comm_file_image(jpg_bytes, args, metadata, comm):
 def duration(t):
     return (datetime.now() - t).microseconds / 1000
 
-""" camera 流模式运行逻辑
+
+def main():
+    """ camera 整合测试(按照流模式运行, 需要设置的参数如下)
+    流模式运行逻辑
     1. 设置并启动 camera 的通信模块(具体参数有命令行取得)
     2. 使用 cv 捕获图像
-    
+    3. 根据 interval 发送图像
+
 """
-def main():
     args = parse_args()
 
     # TODO: comment here when debug
