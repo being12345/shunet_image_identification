@@ -8,6 +8,7 @@ import paho.mqtt.publish as publish
 from berrynet import logger
 from logzero import setup_logger
 
+
 # 1. comm_config: broker(dic) topic subscribe(dic) 2. device_config: client_id password
 def on_message(client, userdata, msg):
     """Dispatch received message to its bound functor.
@@ -49,20 +50,32 @@ class Communicator(object):
     def stop_nb(self):
         self.client.loop_stop()
 
-    def send(self, topic, payload):
-        self.run()
+    def send(self, payload):
+        logger.debug('Send message to topic')
 
-        # logger.debug('Send message to topic')
-
-        test_payload = "{"
-        test_payload += "\"Humidity\":2,";
-        test_payload += "\"Temperature\":25";
-        test_payload += "}"
-
-        # TODO: test thingsboard
-        self.client.publish("v1/devices/me/vedio", test_payload)
+        self.client.publish(self.client.comm_config["topic"], payload)
         print(payload)
 
 
-def disconnect(self):
-    self.client.disconnect()
+def main():
+    comm_config = {
+        "broker": {
+            "address": 'broker.emqx.io',
+            "port": 1883
+        },
+        "topic": "/berrynet/image",
+        "subscribe": {"/berrynet/image": ""},
+    }
+
+    device_config = {
+        "client_id": "ABC",
+        "password": "oBMEfJgd3XhaqrX8eibm"
+    }
+
+    comm = Communicator(comm_config, device_config)
+    comm.start_nb()
+    comm.send(1)
+
+
+if __name__ == '__main__':
+    main()

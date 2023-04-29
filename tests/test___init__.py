@@ -45,8 +45,7 @@ class TestCommunicator(TestCase):
 
         comm.start_nb()
 
-        while True:
-            comm.client.publish(comm_config['topic'], 1)
+        return comm
 
     def test_stop_nb(self):
         comm_config = {
@@ -63,21 +62,7 @@ class TestCommunicator(TestCase):
 
         comm.stop_nb()
 
-    def test_send(self):
-        comm_config = {
-            "client": "ABC",
-            "password": "oBMEfJgd3XhaqrX8eibm",
-            "broker": {
-                "address": "demo.thingsboard.io",
-                "port": 1883
-            },
-            "topic": "v1/devices/me/telemetry"
-        }
+    def test_send(self, comm):
+        comm.send(comm.client.comm_config["topic"], 1)
 
-        comm = Communicator(comm_config)
 
-        pay_load = {
-            "id": "12345"
-        }
-
-        comm.send(comm_config["topic"], pay_load)
