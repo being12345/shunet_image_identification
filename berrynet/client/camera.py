@@ -1,5 +1,5 @@
-# TODO: reconstruct args convert to json
-# TODO: use emqx broker slow
+# reconstructed by zhuofengli
+
 import argparse
 import json
 import logging
@@ -13,7 +13,14 @@ from berrynet import logger
 from berrynet.comm import Communicator, payload
 
 
+
 def parse_args():
+    """
+    1. 对于 stream 模式需要设置的参数: 除了 --file 其他均需要设置(具体信息详见参数说明)
+    2. 对于 file 模式需要设置参数: --mode file; --file-path ;其他与通信相关的参数均需要设置
+    Returns:
+
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument(
         '--mode',
@@ -116,7 +123,9 @@ def capture_stream_image(comm, metadata, args):
         status, im = capture.read()
         if (status is True):
             counter = get_image_success(counter, interval, im, args)
-            comm_stream_image(im, metadata, args, comm)
+            if counter == interval:
+                comm_stream_image(im, metadata, args, comm)
+                counter = 0
 
         else:
             fail_counter = get_image_fail(fail_counter, capture, stream_source)
@@ -150,13 +159,9 @@ def get_image_success(counter, interval, im, args):
     counter += 1
     if counter == interval:
         logger.debug('Drop frames: {}'.format(counter - 1))
-        counter = 0
-
         if args['display']:
             display_image(im, args)
 
-        t = datetime.now()
-        logger.debug('send: {} ms'.format(duration(t)))
 
     else:
         pass
@@ -190,7 +195,10 @@ def capture_file_image(args):
 def comm_stream_image(im, metadata, args, comm):
     retval, jpg_bytes = cv2.imencode('.jpg', im)
     mqtt_payload = payload.serialize_jpg(jpg_bytes, args['hash'], metadata)
+
+    t = datetime.now()
     comm.send(mqtt_payload)
+    logger.debug('send: {} ms'.format(duration(t)))
 
 
 def comm_file_image(jpg_bytes, args, metadata, comm):
@@ -209,7 +217,11 @@ def comm_file_image(jpg_bytes, args, metadata, comm):
 def duration(t):
     return (datetime.now() - t).microseconds / 1000
 
-
+""" camera 流模式运行逻辑
+    1. 设置并启动 camera 的通信模块(具体参数有命令行取得)
+    2. 使用 cv 捕获图像
+    
+"""
 def main():
     args = parse_args()
 
