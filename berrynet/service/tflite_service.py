@@ -1,92 +1,35 @@
 """Engine service is a bridge between incoming data and inference engine.
 """
-
+# 1. 修改模型路径(在参数中指定)
 import argparse
+from datetime import datetime
 import logging
+import this
 import time
 from turtle import color
 
 from berrynet import logger
 from berrynet.comm import payload
 from berrynet.dlmodelmgr import DLModelManager
-from berrynet.engine.tflite_engine import TFLiteClassifierEngine
 from berrynet.engine.tflite_engine import TFLiteDetectorEngine
 from berrynet.service import EngineService
 from berrynet.utils import draw_bb, draw_label
 from berrynet.utils import generate_class_color
 
 
-class TFLiteClassifierService(EngineService):
-    def __init__(self, service_name, engine, comm_config, draw=False):
-        super(TFLiteClassifierService, self).__init__(service_name,
-                                                      engine,
-                                                      comm_config)
-        self.draw = draw
-
-    def inference(self, pl):
-        t0 = time.time()
-        logger.debug('payload size: {}'.format(len(pl)))
-        logger.debug('payload type: {}'.format(type(pl)))
-        jpg_json = payload.deserialize_payload(pl.decode('utf-8'))
-        jpg_bytes = payload.destringify_jpg(jpg_json['bytes'])
-        logger.debug('destringify_jpg: {} ms'.format(time.time() - t0))
-
-        t1 = time.time()
-        bgr_array = payload.jpg2bgr(jpg_bytes)
-        logger.debug('jpg2bgr: {} ms'.format(time.time() - t1))
-
-        t2 = time.time()
-        image_data = self.engine.process_input(bgr_array)
-        logger.debug('Input processing takes {} ms'.format(time.time() - t2))
-
-        t3 = time.time()
-        output = self.engine.inference(image_data)
-        model_outputs = self.engine.process_output(output)
-        logger.debug('Result: {}'.format(model_outputs))
-        logger.debug('Classification takes {} ms'.format(time.time() - t3))
-
-        classes = self.engine.classes
-        labels = self.engine.labels
-
-        logger.debug('draw = {}'.format(self.draw))
-        if self.draw is False:
-            self.result_hook(self.generalize_result(jpg_json, model_outputs))
-        else:
-            self.result_hook(
-                draw_label(bgr_array,
-                           self.generalize_result(jpg_json, model_outputs),
-                           color,
-                           labels))
-
-    def result_hook(self, generalized_result):
-        logger.debug('result_hook, annotations: {}'.format(generalized_result['annotations']))
-        self.comm.send('berrynet/engine/tfliteclassifier/result',
-                       payload.serialize_payload(generalized_result))
-
-
 class TFLiteDetectorService(EngineService):
-    def __init__(self, service_name, engine, comm_config, draw=False):
+    def __init__(self, service_name, engine, comm_config, device_config, draw=False):
         super(TFLiteDetectorService, self).__init__(service_name,
-                                                   engine,
-                                                   comm_config)
+                                                    engine,
+                                                    comm_config,
+                                                    device_config)
         self.draw = draw
 
     def inference(self, pl):
-        t0 = time.time()
-        logger.debug('payload size: {}'.format(len(pl)))
-        logger.debug('payload type: {}'.format(type(pl)))
-        jpg_json = payload.deserialize_payload(pl.decode('utf-8'))
-        jpg_bytes = payload.destringify_jpg(jpg_json['bytes'])
-        logger.debug('destringify_jpg: {} ms'.format(time.time() - t0))
-
-        t1 = time.time()
-        bgr_array = payload.jpg2bgr(jpg_bytes)
-        logger.debug('jpg2bgr: {} ms'.format(time.time() - t1))
+        bgr_array, jpg_json = self.json_to_bgr(pl)
 
         t2 = time.time()
-        image_data = self.engine.process_input(bgr_array)
-        output = self.engine.inference(image_data)
-        model_outputs = self.engine.process_output(output)
+        model_outputs = self.engin_io(bgr_array)
         logger.debug('Result: {}'.format(model_outputs))
         logger.debug('Detection takes {} ms'.format(time.time() - t2))
 
@@ -103,10 +46,42 @@ class TFLiteDetectorService(EngineService):
                         generate_class_color(class_num=classes),
                         labels))
 
+    def json_to_bgr(self, pl):
+        t = datetime.now()
+        logger.debug('payload size: {}'.format(len(pl)))
+        logger.debug('payload type: {}'.format(type(pl)))
+
+        jpg_json = payload.deserialize_payload(pl.decode('utf-8'))
+        jpg_bytes = payload.destringify_jpg(jpg_json['bytes'])
+        logger.debug('destringify_jpg: {} ms'.format(EngineService.duration(t)))
+
+        t = datetime.now()
+        bgr_array = payload.jpg2bgr(jpg_bytes)
+        logger.debug('jpg2bgr: {} ms'.format(self.duration(t)))
+
+        return [bgr_array, jpg_json]
+
     def result_hook(self, generalized_result):
         logger.debug('result_hook, annotations: {}'.format(generalized_result['annotations']))
-        self.comm.send('berrynet/engine/tflitedetector/result',
-                       payload.serialize_payload(generalized_result))
+        self.comm.send(payload.serialize_payload(generalized_result))
+
+
+def get_model_config(args):
+    dlmm = DLModelManager()
+    meta = dlmm.get_model_meta(args['model_package'])
+    args['model'] = meta['model']
+    args['label'] = meta['label']
+
+
+def log_model(args):
+    """
+    log model and label path
+    """
+    if args['model']:
+        logger.debug('model filepath: ' + args['model'])
+        logger.debug('label filepath: ' + args['label'])
+    else:
+        raise Exception('need model')
 
 
 def parse_args():
@@ -116,7 +91,7 @@ def parse_args():
         help=('Classifier or Detector service. '
               'classifier, or detector is acceptable. '
               '(classifier by default)'),
-        default='classifier',
+        default='detector',
         type=str)
     ap.add_argument(
         '--service_name',
@@ -150,54 +125,79 @@ def parse_args():
         '--debug',
         action='store_true',
         help='Debug mode toggle')
+    ap.add_argument(
+        '--broker-ip',
+        default='broker.emqx.io',
+        help='MQTT broker IP.'
+    )
+    ap.add_argument(
+        '--broker-port',
+        default=1883,
+        type=int,
+        help='MQTT broker port.'
+    )
+    ap.add_argument('--topic',
+                    default='shunet/inference',
+                    help='The topic to send the captured frames.'
+                    )
+    ap.add_argument('--clientId',
+                    default='inference',
+                    help='cloud platform token'
+                    )
+    ap.add_argument('--password',
+                    default='oBMEfJgd3XhaqrX8eibm',
+                    help='camera client id'
+                    )
     return vars(ap.parse_args())
 
 
 def main():
     # Comm_Test TFLite engines
     args = parse_args()
-    if args['debug']:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    # if args['debug']:
+    #     logger.setLevel(logging.DEBUG)
+    # else:
+    #     logger.setLevel(logging.INFO)
+
     if args['model_package'] != '':
-        dlmm = DLModelManager()
-        meta = dlmm.get_model_meta(args['model_package'])
-        args['model'] = meta['model']
-        args['label'] = meta['label']
-    logger.debug('model filepath: ' + args['model'])
-    logger.debug('label filepath: ' + args['label'])
+        get_model_config(args)
+
+    log_model(args)
 
     comm_config = {
         'subscribe': {},
         'broker': {
-            'address': 'localhost',
-            'port': 1883
-        }
+            "address": args.get('broker_ip'),
+            "port": args.get('broker_port')
+        },
+        'topic': 'shunet/inference'
     }
 
-    if args['service'] == 'classifier':
-        engine = TFLiteClassifierEngine(
-                     model = args['model'],
-                     labels = args['label'],
-                     top_k = args['top_k'],
-                     num_threads = args['num_threads'])
-        service_functor = TFLiteClassifierService
-    elif args['service'] == 'detector':
+    device_config = {
+        "client_id": args['clientId'],
+        "password": args['password']
+    }
+
+    if args['service'] == 'detector':
         engine = TFLiteDetectorEngine(
-                     model = args['model'],
-                     labels = args['label'],
-                     num_threads = args['num_threads'])
+            model=args['model'],
+            labels=args['label'],
+            num_threads=args['num_threads'])
+
         service_functor = TFLiteDetectorService
     else:
-        raise Exception('Illegal service {}, it should be '
-                        'classifier or detector'.format(args['service']))
+        raise Exception('Illegal service {}, it should be classifier or detector'.format(args['service']))
 
     engine_service = service_functor(args['service_name'],
                                      engine,
                                      comm_config,
+                                     device_config,
                                      draw=args['draw'])
+
     engine_service.run(args)
+
+    while True:
+        continue
 
 
 if __name__ == '__main__':

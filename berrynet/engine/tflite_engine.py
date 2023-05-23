@@ -4,7 +4,6 @@ import time
 from argparse import ArgumentParser
 from os import path
 
-#
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -67,9 +66,7 @@ class TFLiteDetectorEngine(DLEngine):
         self.classes = len(self.labels)
 
         # Define lite graph and Load Tensorflow Lite model into memory
-        self.interpreter = tf.lite.Interpreter(
-            model_path=model,
-            num_threads=num_threads)
+        self.interpreter = tf.lite.Interpreter(model_path=model, num_threads=num_threads)
         self.interpreter.allocate_tensors()
         self.input_details = self.interpreter.get_input_details()
         self.output_details = self.interpreter.get_output_details()
@@ -149,6 +146,11 @@ class TFLiteDetectorEngine(DLEngine):
         return labels
 
 
+"""
+    engine 整合测试(没有通信模块) 
+"""
+
+
 def main():
     # Example command
     #     $ python3 tflite_engine.py -e detector \
@@ -169,7 +171,7 @@ def main():
         raise Exception('Illegal engine {}, it should be '
                         'classifier or detector'.format(args.engine))
 
-    for i in range(5):  # TODO: why repeat 5 times?
+    for i in range(5):
         bgr_array = cv2.imread(args.input)
         t = time.time()
         image_data = engine.process_input(bgr_array)

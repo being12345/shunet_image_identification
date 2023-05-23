@@ -14,9 +14,9 @@ def on_message(client, userdata, msg):
     """Dispatch received message to its bound functor.
     """
     logger.debug('Receive message from topic {}'.format(msg.topic))
-    # logger.debug('Message payload {}'.format(msg.payload))
-    # TODO: update on_message
-    # client.comm_config['subscribe'][msg.topic](msg.payload)
+
+    # call back used for inference
+    client.comm_config['subscribe'][msg.topic](msg.payload)
 
 
 class Communicator(object):
@@ -33,6 +33,7 @@ class Communicator(object):
         self.client.comm_config = comm_config
         self.client.on_message = on_message
 
+    # depulicated
     def run(self):
         self.client.connect(
             self.client.comm_config['broker']['address'],
@@ -45,9 +46,10 @@ class Communicator(object):
         def on_connect(client, userdata, flags, rc):
             logger.debug('Connected with result code ' + str(rc))
 
-            for topic in client.comm_config['subscribe'].keys():
-                logger.debug('Subscribe topic {}'.format(topic))
-                client.subscribe(topic)
+            if 'subscribe' in client.comm_config:
+                for topic in client.comm_config['subscribe'].keys():
+                    logger.debug('Subscribe topic {}'.format(topic))
+                    client.subscribe(topic)
 
         self.client.on_connect = on_connect
 
@@ -60,7 +62,7 @@ class Communicator(object):
         self.client.loop_stop()
 
     def send(self, payload):
-        logger.debug('Send message to topic')
+        logger.debug('Send message to topic {}'.format(self.client.comm_config["topic"]))
 
         self.client.publish(self.client.comm_config["topic"], payload)
 
@@ -78,7 +80,8 @@ def main():
         },
         "topic": "/berrynet/image",
         "subscribe": {
-            "/berrynet/image": ""},
+
+        }
     }
 
     device_config = {

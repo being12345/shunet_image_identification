@@ -1,0 +1,12 @@
+{
+    "name": "mobilenet-ssd-coco-tflite",
+    "version": "2.0.0",
+    "inference-engine": "TFLite",
+    "config": {},
+    "checksums-sha256": {
+        "labels.txt": "126f61589f8aefe49bedf19a6e5c93adb6d30da69350196fb66840688bdb911f",
+        "model.tflite": "ee1191da5119aa62958c899ac51a784618ad4fa13985c57229f8e64ccd68c8b0"
+    },
+    "model": "model.tflite",
+    "label": "labels.txt"
+}

@@ -239,8 +239,6 @@ def main():
             "port": args.get('broker_port')
         },
         "topic": args['topic'],
-        "subscribe": {  # TODO: update this
-            "/berrynet/image": ""},
     }
 
     device_config = {
