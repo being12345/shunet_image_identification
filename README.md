@@ -24,4 +24,4 @@
 ## 致谢
 Thanks to my tutor Jun Han, giving me lots of encourage, resource and idea.
 
-Thanks to opensourcecode, giving me the chance to learn.
+Thanks to opensource, giving me the chance to learn.
