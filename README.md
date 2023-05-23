@@ -22,5 +22,6 @@
 2. 移植到嵌入式设备中
 ...
 ## 致谢
-thanks to my tutor Jun Han, giving me lots of encourage, resource and idea
-thanks to opensourcecode, giving me the chance to learn
+Thanks to my tutor Jun Han, giving me lots of encourage, resource and idea.
+
+Thanks to opensourcecode, giving me the chance to learn.
