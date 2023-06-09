@@ -151,11 +151,6 @@ def parse_args():
         default=1883,
         help='MQTT broker IP.'
     )
-    ap.add_argument('--send-topic',
-                    default='v1/devices/me/shunet',
-                    help='The topic to send the captured frames.'
-                    )
-
     ap.add_argument('--clientId',
                     default='inference',
                     help='cloud platform token'
@@ -187,7 +182,7 @@ def main():
             "send_address": args.get('send_ip'),
             "port": args.get('broker_port')
         },
-        'topic': args.get('topic')
+        'topic': args.get('topic'),
     }
 
     device_config = {
