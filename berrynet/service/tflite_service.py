@@ -140,13 +140,29 @@ def parse_args():
                     default='shunet/inference',
                     help='The topic to send the captured frames.'
                     )
+
+    ap.add_argument(
+        '--send-ip',
+        default='demo.thingsboard.io',
+        help='MQTT broker IP.'
+    )
+    ap.add_argument(
+        '--send-port',
+        default=1883,
+        help='MQTT broker IP.'
+    )
+    ap.add_argument('--send-topic',
+                    default='v1/devices/me/shunet',
+                    help='The topic to send the captured frames.'
+                    )
+
     ap.add_argument('--clientId',
                     default='inference',
                     help='cloud platform token'
                     )
     ap.add_argument('--password',
-                    default='oBMEfJgd3XhaqrX8eibm',
-                    help='camera client id'
+                    default='Sl2y3k68WQnpBOLPQ9AE',
+                    help='password'
                     )
     return vars(ap.parse_args())
 
@@ -168,9 +184,10 @@ def main():
         'subscribe': {},
         'broker': {
             "address": args.get('broker_ip'),
+            "send_address": args.get('send_ip'),
             "port": args.get('broker_port')
         },
-        'topic': 'shunet/inference'
+        'topic': args.get('topic')
     }
 
     device_config = {
