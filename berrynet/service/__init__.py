@@ -35,10 +35,11 @@ class EngineService(object):
         self.service_name = service_name
         self.engine = engine
         self.comm_config = comm_config
+        self.device_config = device_config  # TODO: ?
+
         for topic, functor in self.comm_config['subscribe'].items():
             self.comm_config['subscribe'][topic] = eval(functor)
         self.comm_config['subscribe']['berrynet/data/rgbimage'] = self.inference  # TODO: ?
-        print(comm_config)
         self.comm = Communicator(self.comm_config, device_config, debug=True)
 
     def inference(self, pl):

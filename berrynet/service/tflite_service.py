@@ -1,12 +1,13 @@
 """Engine service is a bridge between incoming data and inference engine.
 """
-# 1. 修改模型路径(在参数中指定)
 import argparse
 from datetime import datetime
 import logging
 import this
 import time
 from turtle import color
+
+from paho.mqtt import publish
 
 from berrynet import logger
 from berrynet.comm import payload
@@ -63,7 +64,12 @@ class TFLiteDetectorService(EngineService):
 
     def result_hook(self, generalized_result):
         logger.debug('result_hook, annotations: {}'.format(generalized_result['annotations']))
-        self.comm.send(payload.serialize_payload(generalized_result))
+
+        print(self.comm_config["topic"], payload.serialize_payload(generalized_result['annotations']),
+              self.comm_config["broker"]["send_ip"])
+        publish.single(self.comm_config["topic"], payload.serialize_payload(generalized_result['annotations']),
+                       hostname=self.comm_config["broker"]["send_ip"],
+                       auth={"username": self.device_config["password"], "password": "12345"})
 
 
 def get_model_config(args):
@@ -137,7 +143,7 @@ def parse_args():
         help='MQTT broker port.'
     )
     ap.add_argument('--topic',
-                    default='shunet/inference',
+                    default='v1/devices/me/shunet',
                     help='The topic to send the captured frames.'
                     )
 
@@ -179,7 +185,7 @@ def main():
         'subscribe': {},
         'broker': {
             "address": args.get('broker_ip'),
-            "send_address": args.get('send_ip'),
+            "send_ip": args.get('send_ip'),
             "port": args.get('broker_port')
         },
         'topic': args.get('topic'),
